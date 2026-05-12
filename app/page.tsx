@@ -61,13 +61,7 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Available Inventory
-          </h1>
-          <button 
-            onClick={fetchProducts}
-            className="text-sm bg-white border px-3 py-1 rounded-md hover:bg-slate-50 transition-colors"
-          >
-            Refresh Stock
-          </button>
+          </h1> 
         </div>
         
         {items.length === 0 ? (

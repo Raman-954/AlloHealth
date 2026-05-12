@@ -25,14 +25,7 @@ export default function ReservationPage({
         if (res.status === 404) setError("Reservation not found.");
         return;
       }
-      
-      const data = await res.json();
-      setStatus(data.status);
-
-      const expiry = new Date(data.expiresAt).getTime();
-      const now = new Date().getTime();
-      const diff = Math.max(0, Math.floor((expiry - now) / 1000));
-      
+       
       setTimeLeft(diff);
     } catch (err) {
       setError("Failed to connect to the server.");

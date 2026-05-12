@@ -7,14 +7,6 @@ export async function GET() {
         include: { warehouse: true }
       }
     }
-  });
-  const inventoryList = products.flatMap(p => 
-    p.inventories.map(inv => ({
-      inventoryId: inv.id,
-      productName: p.name,
-      warehouseName: inv.warehouse.name,
-      availableStock: inv.totalUnits - inv.reservedUnits,
-    }))
-  );
-  return NextResponse.json(inventoryList);
+  }); 
+  return NextResponse.json();
 }
