@@ -1,23 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
-export default function ReservationPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const reservationId = params.id;
+export default function ReservationPage() {
+  const router = useRouter();
+  const params = useParams();
+  const reservationId = params.id as string;
 
   const [status, setStatus] = useState<string>("PENDING");
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   const refreshStatus = async () => {
+    if (!reservationId) return;
+
     try {
       const res = await fetch(`/api/reservations/${reservationId}`);
 
@@ -50,10 +49,7 @@ export default function ReservationPage({
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev !== null && prev > 0) {
-          return prev - 1;
-        }
-
+        if (prev !== null && prev > 0) return prev - 1;
         clearInterval(timer);
         setStatus("EXPIRED");
         return 0;
@@ -96,7 +92,6 @@ export default function ReservationPage({
   return (
     <main className="min-h-screen bg-slate-50">
       <Navbar />
-
       <div className="max-w-md mx-auto mt-12 px-4">
         {error && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-md">
