@@ -1,25 +1,22 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
-import { use } from "react";
+export default function ReservationPage() {
+  const router = useRouter();
+  const params = useParams();
+  const reservationId = params.id as string;
 
-export default function ReservationPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id: reservationId } = use(params);
-
-  const [status, setStatus] = useState<string>("PENDING");
+  const [status, setStatus] = useState("PENDING");
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   const refreshStatus = async () => {
+    if (!reservationId) return;
+
     try {
       const res = await fetch(`/api/reservations/${reservationId}`);
 
@@ -39,7 +36,7 @@ export default function ReservationPage({
 
       setTimeLeft(diff);
     } catch {
-      setError("Failed to connect to the server.");
+      setError("Failed to connect to server.");
     }
   };
 
@@ -52,10 +49,7 @@ export default function ReservationPage({
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev !== null && prev > 0) {
-          return prev - 1;
-        }
-
+        if (prev && prev > 0) return prev - 1;
         clearInterval(timer);
         setStatus("EXPIRED");
         return 0;
@@ -66,27 +60,19 @@ export default function ReservationPage({
   }, [timeLeft, status]);
 
   const handleAction = async (action: "confirm" | "release") => {
-    setError(null);
     setLoading(true);
+    setError(null);
 
     try {
       const res = await fetch(`/api/reservations/${reservationId}/${action}`, {
         method: "POST",
       });
 
-      if (res.status === 410) {
-        setError("Reservation expired.");
-        setStatus("EXPIRED");
-        setTimeLeft(0);
-        return;
-      }
-
       if (res.ok) {
         router.push("/");
-        router.refresh();
       } else {
         const data = await res.json();
-        setError(data.error || "Something went wrong.");
+        setError(data.error || "Action failed.");
       }
     } catch {
       setError("Network error.");
@@ -101,21 +87,18 @@ export default function ReservationPage({
 
       <div className="max-w-md mx-auto mt-12 px-4">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-md">
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
             <p className="font-bold">Error</p>
-            <p className="text-sm">{error}</p>
+            <p>{error}</p>
           </div>
         )}
 
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-xl text-center">
-          <h1 className="text-2xl font-bold mb-2">Secure Your Order</h1>
+        <div className="bg-white p-8 rounded-2xl shadow text-center">
+          <h1 className="text-2xl font-bold mb-6">Secure Your Order</h1>
 
-          <div className="bg-slate-900 text-white rounded-2xl py-10 mb-8">
-            <p className="text-xs uppercase text-slate-400 font-bold tracking-widest mb-2">
-              Time Remaining
-            </p>
-
-            <p className="text-6xl font-mono font-bold">
+          <div className="bg-slate-900 text-white rounded-xl py-8 mb-6">
+            <p>TIME REMAINING</p>
+            <p className="text-5xl font-mono">
               {timeLeft !== null
                 ? `${Math.floor(timeLeft / 60)}:${(timeLeft % 60)
                     .toString()
@@ -124,23 +107,21 @@ export default function ReservationPage({
             </p>
           </div>
 
-          <div className="space-y-4">
-            <button
-              onClick={() => handleAction("confirm")}
-              disabled={timeLeft === 0 || loading || status !== "PENDING"}
-              className="w-full bg-green-600 text-white py-4 rounded-xl"
-            >
-              {loading ? "Processing..." : "Confirm & Pay Now"}
-            </button>
+          <button
+            onClick={() => handleAction("confirm")}
+            disabled={loading}
+            className="w-full bg-green-600 text-white py-4 rounded-xl mb-4"
+          >
+            Confirm & Pay Now
+          </button>
 
-            <button
-              onClick={() => handleAction("release")}
-              disabled={loading}
-              className="w-full bg-white border border-slate-200 py-4 rounded-xl"
-            >
-              Cancel Order
-            </button>
-          </div>
+          <button
+            onClick={() => handleAction("release")}
+            disabled={loading}
+            className="w-full border py-4 rounded-xl"
+          >
+            Cancel Order
+          </button>
         </div>
       </div>
     </main>
