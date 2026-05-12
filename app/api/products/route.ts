@@ -13,19 +13,18 @@ export async function GET() {
       },
     });
 
-    const formatted = products.flatMap((product) =>
+    const formattedProducts = products.flatMap((product) =>
       product.inventories.map((inventory) => ({
         inventoryId: inventory.id,
         productName: product.name,
-        sku: product.sku,
         warehouseName: inventory.warehouse.name,
         availableUnits: inventory.totalUnits - inventory.reservedUnits,
       }))
     );
 
-    return NextResponse.json(formatted);
+    return NextResponse.json(formattedProducts);
   } catch (error) {
-    console.error(error);
+    console.error("Products API Error:", error);
     return NextResponse.json([], { status: 500 });
   }
 }
