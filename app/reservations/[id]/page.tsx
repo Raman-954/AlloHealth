@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+
+import { use } from "react";
 
 export default function ReservationPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const reservationId = params.id;
+  const { id: reservationId } = use(params);
 
   const [status, setStatus] = useState<string>("PENDING");
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
