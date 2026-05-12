@@ -2,15 +2,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const products = await prisma.product.findMany({
+  const inventories = await prisma.inventory.findMany({
     include: {
-      inventories: {
-        include: {
-          warehouse: true,
-        },
-      },
+      product: true,
+      warehouse: true,
     },
   });
+
+  const products = inventories.map((inventory) => ({
+    inventoryId: inventory.id,
+    productName: inventory.product.name,
+    warehouseName: inventory.warehouse.name,
+    availableStock: inventory.totalUnits - inventory.reservedUnits,
+  }));
 
   return NextResponse.json(products);
 }
