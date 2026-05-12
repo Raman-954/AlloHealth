@@ -3,26 +3,29 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const products = await prisma.inventory.findMany({
+    const products = await prisma.product.findMany({
       include: {
-        product: true,
-        warehouse: true,
+        inventories: {
+          include: {
+            warehouse: true,
+          },
+        },
       },
     });
 
-    const formattedProducts = products.map((item) => ({
-      inventoryId: item.id,
-      productName: item.product.name,
-      warehouseName: item.warehouse.name,
-      availableStock: item.totalUnits - item.reservedUnits,
-    }));
+    const formatted = products.flatMap((product) =>
+      product.inventories.map((inventory) => ({
+        inventoryId: inventory.id,
+        productName: product.name,
+        sku: product.sku,
+        warehouseName: inventory.warehouse.name,
+        availableUnits: inventory.totalUnits - inventory.reservedUnits,
+      }))
+    );
 
-    return NextResponse.json(formattedProducts);
+    return NextResponse.json(formatted);
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
+    return NextResponse.json([], { status: 500 });
   }
 }
