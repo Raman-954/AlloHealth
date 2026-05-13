@@ -40,29 +40,13 @@ export async function POST(req: Request) {
       });
     });
 
-    return NextResponse.json(
-      {
-        id: result.id,
-        inventoryId: result.inventoryId,
-        status: result.status,
-        expiresAt: result.expiresAt,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json(result, { status: 201 });
 
   } catch (error: any) {
     console.error("API_ERROR:", error.message);
-
     if (error.message === "OUT_OF_STOCK") {
-      return NextResponse.json(
-        { error: "No stock left (409)" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "No stock left (409)" }, { status: 409 });
     }
-
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
