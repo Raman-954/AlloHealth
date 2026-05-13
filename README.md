@@ -1,64 +1,362 @@
-# Allo Inventory - Reservation System 📦
+# Allo Inventory Reservation System 📦
 
-Hi there! This is my submission for the Allo Engineering Take-Home Exercise. I've built a functional inventory reservation system using **Next.js 15** that prevents "overselling" during high-traffic checkout windows.
+A production-style inventory reservation system designed to prevent overselling during concurrent checkout scenarios.
 
-## 🎯 The Problem
-When a customer reaches checkout, there's a risk of a race condition: multiple users might try to buy the last item simultaneously.
-- **My Solution**: A 10-minute temporary reservation (hold) that ensures stock is locked for a specific user while they complete their payment.
+This project simulates a real-world e-commerce inventory workflow where multiple users may attempt to reserve the same product simultaneously. The focus of this implementation is handling race conditions safely using transactional database operations.
+
+## Live Demo
+
+🔗 https://alloinventory.vercel.app
 
 ---
 
-## 🚀 Quick Start
+## Problem Statement
 
-### 1. Environment Setup
-Create a `.env` file in the root directory and add your PostgreSQL connection string (Supabase/Neon):
+In e-commerce systems, overselling happens when multiple users try to reserve or purchase the same limited inventory at the same time.
+
+Example:
+
+- Available stock = 1
+- User A clicks **Reserve**
+- User B clicks **Reserve** almost simultaneously
+- Without concurrency control, both requests may succeed
+
+This creates inconsistent inventory state and poor user experience.
+
+---
+
+## Solution
+
+To solve this, I implemented a temporary reservation mechanism backed by database transactions.
+
+Flow:
+
+- User selects a product
+- User requests a reservation
+- System validates stock atomically
+- Reservation is created for 10 minutes
+- Reserved stock becomes unavailable to others
+- User can confirm reservation before expiry
+- Expired reservations are released automatically
+
+---
+
+## Features
+
+- Temporary inventory reservation (10-minute hold)
+- Concurrency-safe reservation creation
+- Reservation confirmation flow
+- Manual reservation release
+- Automatic expired reservation cleanup
+- Product inventory listing
+- Warehouse inventory support
+- Real-time stock refresh
+- Error handling for invalid / expired requests
+
+---
+
+## Tech Stack 🛠️
+
+**Framework**
+- Next.js 15 (App Router)
+
+**Language**
+- TypeScript
+
+**Database**
+- PostgreSQL (Supabase)
+
+**ORM**
+- Prisma ORM
+
+**Styling**
+- Tailwind CSS
+
+**Deployment**
+- Vercel
+
+---
+
+## API Endpoints
+
+### Get Products
+```http
+GET /api/products
+```
+
+Fetches available inventory/products.
+
+---
+
+### Create Reservation
+```http
+POST /api/reservations
+```
+
+Creates a temporary reservation if stock is available.
+
+---
+
+### Confirm Reservation
+```http
+POST /api/reservations/[id]/confirm
+```
+
+Confirms an active reservation before expiry.
+
+---
+
+### Release Reservation
+```http
+POST /api/reservations/[id]/release
+```
+
+Releases reserved inventory back to stock.
+
+---
+
+### Get Warehouses
+```http
+GET /api/warehouses
+```
+
+Fetches warehouse inventory data.
+
+---
+
+## Project Structure
+
+```bash
+app/
+├── api/
+│   ├── products/
+│   │   └── route.ts
+│   │
+│   ├── reservations/
+│   │   ├── route.ts
+│   │   └── [id]/
+│   │       ├── confirm/
+│   │       │   └── route.ts
+│   │       └── release/
+│   │           └── route.ts
+│   │
+│   └── warehouses/
+│       └── route.ts
+│
+├── reservations/
+│   └── [id]/
+│       └── page.tsx
+│
+├── page.tsx
+├── layout.tsx
+├── globals.css
+└── favicon.ico
+
+components/
+├── Navbar.tsx
+├── ProductCard.tsx
+└── ReservationForm.tsx
+
+lib/
+├── prisma.ts
+└── reservation-utils.ts
+
+prisma/
+├── schema.prisma
+└── seed.ts
+
+types/
+└── index.ts
+```
+
+---
+
+## Local Setup
+
+### Clone Repository
+
+```bash
+git clone https://github.com/Raman-954/AlloHealth.git
+cd allo-inventory-system
+```
+
+---
+
+### Environment Variables
+
+Create `.env` file:
+
 ```env
-DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
+DATABASE_URL="your_supabase_pooling_url"
+DIRECT_URL="your_supabase_direct_url"
+```
 
-2. Install & Sync
+Example:
 
-# Install dependencies
+```env
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
+```
+
+---
+
+### Install Dependencies
+
+```bash
 npm install
+```
 
-# Push schema to database
+---
+
+### Database Setup
+
+Push schema:
+
+```bash
 npx prisma db push
+```
 
-# Generate Prisma client
+Generate Prisma client:
+
+```bash
 npx prisma generate
+```
 
-# Seed the database (Important: Creates 3 products & 2 warehouses)
+Seed sample data:
+
+```bash
 npx prisma db seed
+```
 
-3. Run Locally
+---
 
+### Run Project
+
+```bash
 npm run dev
+```
 
-🧠 Technical Deep Dive
-1. Handling Concurrency (Race Conditions) 🏎️
-The most critical part of this exercise was ensuring that if two users click "Reserve" at the same time for the last unit, exactly one succeeds.
-Implementation: I used Prisma Interactive Transactions.
-Logic: Inside the transaction, the database locks the specific inventory row. We check if available stock > requested quantity. If yes, we increment reservedUnits and commit.
-Result: Because this happens in a transaction, the database forces requests to be processed one-by-one. The second request will see 0 stock and return a 409 Conflict error.
+Runs at:
 
-2. Expiry Mechanism: "Lazy Cleanup" ⏳
-Instead of using complex Cron jobs or background workers, I implemented a Lazy Cleanup on Read strategy.
-How it works: In the POST /api/reservations endpoint, before we check for available stock, we first look for any PENDING reservations for that item that have expired.
-Effect: It automatically releases the "stale" reserved units back into the inventory. This ensures that stock is never "stuck" in abandoned carts for more than 10 minutes.
+```bash
+http://localhost:3000
+```
 
-3. Frontend Error Handling 🛡️
-409 Conflict: If stock runs out, the user gets a clear alert on the home page, and the product list refreshes to show the latest stock levels.
-410 Gone: If the timer hits zero on the checkout page, the "Confirm" button is disabled, and the user is notified that their window has expired.
+---
 
-⚖️ Trade-offs & Decisions
-Simple Validation over Zod: I kept the request validation simple using standard conditional checks. This keeps the codebase lightweight and easy to follow for this specific scope.
+## Engineering Decisions
 
-Database Transactions over Redis: For a single-database setup, SQL transactions are the most reliable way to handle race conditions. I avoided Redis to keep the infrastructure simple and "human-readable," as per the project requirements.
+### 1. Concurrency Handling
 
-Next.js 15 Handling: I used await params in dynamic API routes and the use(params) hook in client components to adhere to the new asynchronous requirements of Next.js 15.
+The primary challenge was preventing overselling during simultaneous reservation attempts.
 
+I used **Prisma Interactive Transactions** to ensure atomic operations.
 
-🛠️ Tech Stack
-Framework: Next.js 15 (App Router)
-Language: TypeScript
-Database: PostgreSQL + Prisma ORM
-Styling: Tailwind CSS
+Within the transaction:
+
+- stock availability is checked
+- reservation creation happens
+- inventory consistency is preserved
+
+Because these steps occur atomically, concurrent requests cannot incorrectly reserve the same stock.
+
+---
+
+### 2. Reservation Expiration Strategy
+
+Instead of background cron jobs, I implemented lazy cleanup.
+
+How it works:
+
+Before processing reservation logic:
+
+- expired pending reservations are identified
+- reserved stock is released automatically
+
+Benefits:
+
+- simpler deployment
+- reduced infrastructure complexity
+- fewer operational dependencies
+
+---
+
+### 3. Why Database Transactions Instead of Redis Locks?
+
+For this project scope, PostgreSQL transactions were the most practical choice.
+
+Advantages:
+
+- strong consistency guarantees
+- simpler implementation
+- no additional infrastructure
+- easier debugging
+
+In larger distributed systems, Redis distributed locking would be a stronger scaling option.
+
+---
+
+### 4. Error Handling
+
+Handled key failure scenarios:
+
+**409 Conflict**
+- stock no longer available
+
+**410 Gone**
+- reservation expired
+
+**400 Bad Request**
+- invalid request payload
+
+This keeps frontend state predictable.
+
+---
+
+## Trade-offs
+
+Intentional engineering trade-offs:
+
+- lazy cleanup instead of scheduled workers
+- SQL locking instead of distributed locking
+- no authentication layer
+- no payment/order workflow
+
+These choices kept the solution focused and maintainable.
+
+---
+
+## Future Improvements
+
+Possible scaling improvements:
+
+- Redis distributed locks
+- background cleanup workers
+- reservation queues
+- authentication / user accounts
+- payment integration
+- audit logging
+- observability / monitoring
+
+---
+
+## What This Project Demonstrates
+
+This project showcases:
+
+- backend API design
+- concurrency-safe transaction handling
+- database schema design
+- Prisma ORM integration
+- PostgreSQL inventory workflows
+- engineering tradeoff decision-making
+- full-stack deployment workflow
+
+---
+
+## Author
+
+**Raman Kumar**
+
+GitHub: https://github.com/Raman-954  
+LinkedIn: https://www.linkedin.com/in/raman-kumar-webdev/
