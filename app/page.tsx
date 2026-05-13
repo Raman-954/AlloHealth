@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -21,22 +20,19 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
-  async function handleReserve(inventoryId: string) {
-    setLoadingId(inventoryId);
-        const idempotencyKey = crypto.randomUUID();
-
-    try {
-      const res = await fetch("/api/reservations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-idempotency-key": idempotencyKey, 
-        },
-        body: JSON.stringify({ 
-          inventoryId: inventoryId, 
-          quantity: 1 
-        }),
-      });
+async function handleReserve(inventoryId: string) {
+  setLoadingId(inventoryId);
+  try {
+    const res = await fetch("/api/reservations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+        inventoryId: inventoryId, 
+        quantity: 1 
+      }),
+    });
 
       const data = await res.json();
 
@@ -61,6 +57,7 @@ export default function HomePage() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Available Inventory
           </h1>
+          
         </div>
         
         {items.length === 0 ? (
