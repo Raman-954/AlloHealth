@@ -23,15 +23,14 @@ export default function HomePage() {
 
   async function handleReserve(inventoryId: string) {
     setLoadingId(inventoryId);
-    
-    const idempotencyKey = crypto.randomUUID();
+        const idempotencyKey = crypto.randomUUID();
 
     try {
       const res = await fetch("/api/reservations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-idempotency-key": idempotencyKey,
+          "x-idempotency-key": idempotencyKey, 
         },
         body: JSON.stringify({ 
           inventoryId: inventoryId, 
@@ -61,7 +60,13 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Available Inventory
-          </h1> 
+          </h1>
+          <button 
+            onClick={fetchProducts}
+            className="text-sm bg-white border px-3 py-1 rounded-md hover:bg-slate-50 transition-colors"
+          >
+            Refresh Stock
+          </button>
         </div>
         
         {items.length === 0 ? (
