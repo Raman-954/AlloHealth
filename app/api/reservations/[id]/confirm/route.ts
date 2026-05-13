@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> } 
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await params;
-    const reservationId = resolvedParams.id;
+    const { id } = await params;
 
     const result = await prisma.$transaction(async (tx) => {
       const reservation = await tx.reservation.findUnique({
-        where: { id: reservationId },
+        where: { id: id },
         include: { inventory: true },
       });
 
@@ -18,13 +18,14 @@ export async function POST(
       if (reservation.status === "CONFIRMED") return reservation;
       if (reservation.status === "RELEASED") throw new Error("ALREADY_RELEASED");
 
-      if (reservation.expiresAt < new Date()) {
+      const now = new Date();
+      if (reservation.expiresAt < now) {
         await tx.inventory.update({
           where: { id: reservation.inventoryId },
           data: { reservedUnits: { decrement: reservation.quantity } },
         });
         await tx.reservation.update({
-          where: { id: reservationId },
+          where: { id: id },
           data: { status: "RELEASED" },
         });
         throw new Error("EXPIRED");
@@ -39,14 +40,14 @@ export async function POST(
       });
 
       return await tx.reservation.update({
-        where: { id: reservationId },
+        where: { id: id },
         data: { status: "CONFIRMED" },
       });
     });
 
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error("Confirmation Error:", error);
+    console.error("CONFIRM_ERROR:", error.message);
     const status = error.message === "EXPIRED" ? 410 : 400;
     return NextResponse.json({ error: error.message }, { status });
   }
