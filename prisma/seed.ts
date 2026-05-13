@@ -7,19 +7,19 @@ async function main() {
   await prisma.product.deleteMany();
   await prisma.warehouse.deleteMany();
   const wh1 = await prisma.warehouse.create({
-    data: { name: 'Main North Warehouse', location: 'New York' },
+    data: { name: 'NJ Logistics Center', location: 'New Jersey' },
   });
   const wh2 = await prisma.warehouse.create({
-    data: { name: 'South Distribution Center', location: 'Austin' },
+    data: { name: 'California Distribution Hub', location: 'San Jose' },
   });
   const p1 = await prisma.product.create({
-    data: { name: 'Mechanical Keyboard', description: 'RGB Backlit, Brown Switches' },
+    data: { name: 'Allo Rest+ Sleep Monitor', description: 'Medical-grade wearable for deep sleep analysis.' },
   });
   const p2 = await prisma.product.create({
-    data: { name: 'Wireless Mouse', description: 'Ergonomic 16000 DPI' },
+    data: { name: 'Vitality Essential 30-Day Pack', description: 'Personalized daily multivitamin subscription.' },
   });
   const p3 = await prisma.product.create({
-    data: { name: 'Ultrawide Monitor', description: '34-inch Curved Display' },
+    data: { name: 'SilkProtein Hydrolyzed Isolate', description: 'Premium plant-based protein, Limited Batch.' },
   });
   await prisma.inventory.createMany({
     data: [
